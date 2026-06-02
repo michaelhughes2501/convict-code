@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.get_full_name() or user.username }} — SecondChance Connect{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Profile card -->
+  <div class="col-lg-4">
+    <div class="card text-center animate-on-scroll">
+      <div class="card-body py-4">
+        <div class="profile-avatar mx-auto mb-3"
+             style="width:90px;height:90px;font-size:2rem;" aria-hidden="true">
+          {{ (user.get_full_name() or user.username)[0].upper() }}
+        </div>
+        <h1 class="h4 fw-bold mb-0">{{ user.get_full_name() or user.username }}</h1>
+        <p class="text-muted mb-3 small">@{{ user.username }}</p>
+
+        {% if user.location %}
+          <p class="small text-muted mb-1">
+            <i class="fas fa-location-dot me-1" aria-hidden="true"></i>{{ user.location }}
+          </p>
+        {% endif %}
+        {% if user.age %}
+          <p class="small text-muted mb-1">
+            <i class="fas fa-cake-candles me-1" aria-hidden="true"></i>{{ user.age }} years old
+          </p>
+        {% endif %}
+        {% if user.rehabilitation_status %}
+          <span class="badge bg-success-subtle text-success rounded-pill mt-2">
+            {{ user.rehabilitation_status }}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if current_user.id != user.id %}
+        <div class="card-footer border-top-0 d-flex gap-2 p-3">
+          {% if is_match %}
+            <a href="{{ url_for('conversation', user_id=user.id) }}"
+               class="btn btn-success flex-fill">
+              <i class="fas fa-envelope me-1" aria-hidden="true"></i> Message
+            </a>
+          {% endif %}
+          {% if not has_liked %}
+            <button class="btn btn-outline-primary flex-fill like-btn" data-user-id="{{ user.id }}"
+                    aria-label="Like {{ user.get_full_name() or user.username }}">
+              <i class="fas fa-heart me-1" aria-hidden="true"></i> Like
+            </button>
+          {% else %}
+            <button class="btn btn-primary flex-fill disabled" aria-disabled="true">
+              <i class="fas fa-heart me-1" aria-hidden="true"></i> Liked
+            </button>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="col-lg-8">
+    <div class="card animate-on-scroll delay-1">
+      <div class="card-header fw-semibold">
+        <i class="fas fa-user me-2 text-primary" aria-hidden="true"></i>About
+      </div>
+      <div class="card-body">
+        <p class="mb-0">
+          {% if user.bio %}
+            {{ user.bio }}
+          {% else %}
+            <span class="text-muted">This member hasn't added a bio yet.</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if user.looking_for or user.crime_type or user.release_date %}
+      <div class="card mt-3 animate-on-scroll delay-2">
+        <div class="card-header fw-semibold">
+          <i class="fas fa-list-ul me-2 text-primary" aria-hidden="true"></i>Details
+        </div>
+        <ul class="list-group list-group-flush">
+          {% if user.looking_for %}
+            <li class="list-group-item d-flex gap-2">
+              <span class="text-muted small w-25 flex-shrink-0">Looking for</span>
+              <span>{{ user.looking_for }}</span>
+            </li>
+          {% endif %}
+          {% if user.crime_type %}
+            <li class="list-group-item d-flex gap-2">
+              <span class="text-muted small w-25 flex-shrink-0">Offense type</span>
+              <span>{{ user.crime_type }}</span>
+            </li>
+          {% endif %}
+          {% if user.release_date %}
+            <li class="list-group-item d-flex gap-2">
+              <span class="text-muted small w-25 flex-shrink-0">Release date</span>
+              <span>{{ user.release_date }}</span>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if is_match %}
+      <div class="alert alert-success mt-3 animate-on-scroll delay-3">
+        <i class="fas fa-circle-check me-2" aria-hidden="true"></i>
+        <strong>You're matched!</strong> You can send {{ user.get_full_name() or user.username }} a private message.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

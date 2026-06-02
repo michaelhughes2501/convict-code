@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Join — SecondChance Connect{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+
+    <div class="text-center mb-4 animate-on-scroll">
+      <i class="fas fa-dove fa-2x text-primary mb-2" aria-hidden="true"></i>
+      <h1 class="h3 fw-bold mb-1">Create your account</h1>
+      <p class="text-muted small">Join a community that believes in second chances</p>
+    </div>
+
+    <div class="card animate-on-scroll delay-1">
+      <div class="card-body p-4">
+        <form method="post" novalidate aria-label="Registration form">
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.username.id }}">Username</label>
+            {{ form.username(class="form-control", placeholder="Choose a username", autocomplete="username") }}
+            {% if form.username.errors %}
+              <div class="text-danger small mt-1" role="alert">{{ form.username.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.email.id }}">Email address</label>
+            {{ form.email(class="form-control", placeholder="your@email.com", autocomplete="email") }}
+            {% if form.email.errors %}
+              <div class="text-danger small mt-1" role="alert">{{ form.email.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.password.id }}">Password</label>
+            {{ form.password(class="form-control", placeholder="Min 6 characters", autocomplete="new-password") }}
+            {% if form.password.errors %}
+              <div class="text-danger small mt-1" role="alert">{{ form.password.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="{{ form.confirm_password.id }}">Confirm Password</label>
+            {{ form.confirm_password(class="form-control", placeholder="Repeat your password", autocomplete="new-password") }}
+            {% if form.confirm_password.errors %}
+              <div class="text-danger small mt-1" role="alert">{{ form.confirm_password.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="fas fa-user-plus me-2" aria-hidden="true"></i>Create Free Account
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-center mt-3 small text-muted">
+      Already have an account?
+      <a href="{{ url_for('login') }}" class="fw-semibold text-decoration-none">Sign in</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}
