@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Housing — SecondChance Connect{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0"><i class="fas fa-house me-2 text-primary"></i>Housing Listings</h1>
+  {% if current_user.is_authenticated %}
+  <a href="{{ url_for('new_housing') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-1"></i> Post Housing
+  </a>
+  {% endif %}
+</div>
+
+{% if listings %}
+  <div class="row g-3">
+    {% for listing in listings %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">{{ listing.title }}</h5>
+          <p class="text-muted mb-1"><i class="fas fa-user me-1"></i>{{ listing.provider }}</p>
+          {% if listing.location %}
+          <p class="text-muted mb-1"><i class="fas fa-map-marker-alt me-1"></i>{{ listing.location }}</p>
+          {% endif %}
+          {% if listing.accepts_records %}
+          <span class="badge bg-success mb-2"><i class="fas fa-check me-1"></i>Accepts Records</span>
+          {% endif %}
+          {% if listing.description %}
+          <p class="card-text small">{{ listing.description[:150] }}{% if listing.description|length > 150 %}…{% endif %}</p>
+          {% endif %}
+        </div>
+        {% if listing.url %}
+        <div class="card-footer bg-transparent">
+          <a href="{{ listing.url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm w-100">
+            Learn More <i class="fas fa-external-link-alt ms-1"></i>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-house fa-3x text-muted mb-3"></i>
+    <p class="text-muted">No housing listings yet.</p>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('new_housing') }}" class="btn btn-primary">Post Housing</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -35,6 +35,7 @@ class User(UserMixin, db.Model):
     # Account status
     is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
@@ -111,12 +112,46 @@ class Like(db.Model):
 
 class Match(db.Model):
     __tablename__ = 'matches'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user1_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user2_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     is_mutual = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     user1 = db.relationship('User', foreign_keys=[user1_id])
     user2 = db.relationship('User', foreign_keys=[user2_id])
+
+
+class Job(db.Model):
+    __tablename__ = 'jobs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    employer = db.Column(db.String(200), nullable=False)
+    location = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    url = db.Column(db.String(500))
+    is_fair_chance = db.Column(db.Boolean, default=True)
+    is_approved = db.Column(db.Boolean, default=False)
+    posted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    poster = db.relationship('User', backref='job_listings')
+
+
+class Housing(db.Model):
+    __tablename__ = 'housing'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    provider = db.Column(db.String(200), nullable=False)
+    location = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    url = db.Column(db.String(500))
+    accepts_records = db.Column(db.Boolean, default=True)
+    is_approved = db.Column(db.Boolean, default=False)
+    posted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    poster = db.relationship('User', backref='housing_listings')

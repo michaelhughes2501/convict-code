@@ -84,6 +84,29 @@
                 <span class="ms-1">Resources</span>
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'jobs' %}active{% endif %}"
+                 href="{{ url_for('jobs') }}">
+                <i class="fas fa-briefcase" aria-hidden="true"></i>
+                <span class="ms-1">Jobs</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'housing' %}active{% endif %}"
+                 href="{{ url_for('housing') }}">
+                <i class="fas fa-house" aria-hidden="true"></i>
+                <span class="ms-1">Housing</span>
+              </a>
+            </li>
+            {% if current_user.is_admin %}
+            <li class="nav-item">
+              <a class="nav-link {% if 'admin' in request.endpoint %}active{% endif %}"
+                 href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                <span class="ms-1">Admin</span>
+              </a>
+            </li>
+            {% endif %}
           {% else %}
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('resources_page') }}">
