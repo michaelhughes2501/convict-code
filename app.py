@@ -6,7 +6,7 @@ from wtforms import StringField, PasswordField, TextAreaField, IntegerField, Sel
 from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange
 from datetime import datetime, timedelta
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 from database import db, User, Message, ForumPost, ForumComment, Like, Match, Job, Housing
 
