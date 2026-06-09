@@ -6,6 +6,7 @@ from wtforms import StringField, PasswordField, TextAreaField, IntegerField, Sel
 from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange
 from datetime import datetime, timedelta
 import os
+from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 from database import db, User, Message, ForumPost, ForumComment, Like, Match, Job, Housing
 
@@ -585,7 +586,11 @@ def admin_delete_post(post_id):
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     flash('Security token expired. Please try again.', 'danger')
-    return redirect(request.referrer or url_for('index'))
+    target = (request.referrer or '').replace('\\', '')
+    parsed_target = urlparse(target)
+    if target and not parsed_target.netloc and not parsed_target.scheme:
+        return redirect(target)
+    return redirect(url_for('index'))
 
 with app.app_context():
     db.create_all()
