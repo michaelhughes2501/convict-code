@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Search People — SecondChance Connect{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="h3 fw-bold mb-0">
+    <i class="fas fa-magnifying-glass me-2 text-primary" aria-hidden="true"></i>Find People
+  </h1>
+</div>
+
+<!-- Server-side search form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end" role="search" aria-label="Search members">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold" for="q">Name or username</label>
+        <input class="form-control" id="q" name="q" type="search"
+               value="{{ query }}" placeholder="Search…" autocomplete="off">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold" for="min_age">Min age</label>
+        <input class="form-control" id="min_age" name="min_age" type="number"
+               min="18" max="99" value="{{ request.args.get('min_age', '') }}" placeholder="18">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold" for="max_age">Max age</label>
+        <input class="form-control" id="max_age" name="max_age" type="number"
+               min="18" max="99" value="{{ request.args.get('max_age', '') }}" placeholder="99">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold" for="location">Location</label>
+        <input class="form-control" id="location" name="location" type="text"
+               value="{{ request.args.get('location', '') }}" placeholder="City or state">
+      </div>
+      <div class="col-md-1">
+        <button type="submit" class="btn btn-primary w-100" aria-label="Submit search">
+          <i class="fas fa-search" aria-hidden="true"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if users %}
+  <!-- Live text filter (client-side, on top of server results) -->
+  <div class="search-live-wrapper mb-3">
+    <i class="fas fa-filter search-icon" aria-hidden="true"></i>
+    <input type="search" id="live-search-input" class="search-live-input"
+           placeholder="Filter these results…" aria-label="Filter search results" autocomplete="off">
+  </div>
+
+  <p class="text-muted small mb-3" id="results-count">
+    Showing <strong>{{ users | length }}</strong> member{{ 's' if users | length != 1 else '' }}
+  </p>
+
+  <div class="row g-3" id="results-grid">
+    {% for user in users %}
+      <div class="col-sm-6 col-lg-4 user-result-col animate-on-scroll delay-{{ loop.index0 % 4 + 1 }}">
+        <div class="card h-100 user-result-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="profile-avatar" aria-hidden="true">
+                {{ (user.get_full_name() or user.username)[0].upper() }}
+              </div>
+              <div class="min-w-0">
+                <h2 class="h6 fw-semibold mb-0 text-truncate">
+                  {{ user.get_full_name() or user.username }}
+                </h2>
+                <span class="text-muted small">@{{ user.username }}</span>
+              </div>
+            </div>
+
+            {% if user.location %}
+              <p class="small text-muted mb-1">
+                <i class="fas fa-location-dot me-1" aria-hidden="true"></i>{{ user.location }}
+              </p>
+            {% endif %}
+            {% if user.age %}
+              <p class="small text-muted mb-1">
+                <i class="fas fa-cake-candles me-1" aria-hidden="true"></i>{{ user.age }} years old
+              </p>
+            {% endif %}
+            {% if user.rehabilitation_status %}
+              <span class="badge bg-success-subtle text-success rounded-pill small">
+                {{ user.rehabilitation_status }}
+              </span>
+            {% endif %}
+          </div>
+          <div class="card-footer bg-transparent border-top-0 d-flex gap-2">
+            <a href="{{ url_for('view_profile', user_id=user.id) }}"
+               class="btn btn-outline-primary btn-sm flex-fill">
+              View Profile
+            </a>
+            <button class="btn btn-primary btn-sm like-btn" data-user-id="{{ user.id }}"
+                    aria-label="Like {{ user.get_full_name() or user.username }}">
+              <i class="fas fa-heart" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <p id="no-results-msg" class="text-muted text-center py-4 d-none">
+    No members match your filter.
+  </p>
+
+{% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-users-slash fa-3x text-muted mb-3" aria-hidden="true"></i>
+    <h2 class="h5 text-muted">No members found</h2>
+    <p class="text-muted small">Try adjusting your search terms or filters.</p>
+  </div>
+{% endif %}
+{% endblock %}
