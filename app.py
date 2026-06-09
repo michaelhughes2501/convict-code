@@ -13,7 +13,18 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///felon_dating.db')
+database_url = os.getenv("DATABASE_URL")
+
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace(
+        "postgres://",
+        "postgresql://",
+        1
+    )
+
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    database_url or "sqlite:///felon_dating.db"
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -260,7 +271,7 @@ def new_post():
 @app.route('/forum/post/<int:post_id>')
 def view_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
-    post.views += 1
+    post.views = (post.views or 0) + 1
     db.session.commit()
     comments = ForumComment.query.filter_by(post_id=post_id).order_by(ForumComment.created_at).all()
     return render_template('view_post.html', post=post, comments=comments)
