@@ -6,6 +6,7 @@ from wtforms import StringField, PasswordField, TextAreaField, IntegerField, Sel
 from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange
 from datetime import datetime, timedelta
 import os
+from urllib.parse import urlparse
 from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 from database import db, User, Message, ForumPost, ForumComment, Like, Match, Job, Housing
@@ -121,6 +122,13 @@ RESOURCES = [
     {'category': 'Community', 'name': 'Mentoring for Reentry', 'description': 'One-on-one mentorship programs connecting you with community guides', 'url': '#', 'tags': ['mentoring', 'community', 'support', 'guidance']},
 ]
 
+def is_safe_redirect_target(target):
+    if not target:
+        return False
+    normalized_target = target.replace('\\', '/')
+    parsed = urlparse(normalized_target)
+    return not parsed.scheme and not parsed.netloc and normalized_target.startswith('/')
+
 # Routes
 @app.route('/')
 def index():
@@ -159,7 +167,9 @@ def login():
             db.session.commit()
             flash('Logged in successfully!', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+            if is_safe_redirect_target(next_page):
+                return redirect(next_page)
+            return redirect(url_for('dashboard'))
         flash('Invalid username or password.', 'danger')
     return render_template('login.html', form=form)
 
