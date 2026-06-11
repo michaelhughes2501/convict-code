@@ -142,10 +142,20 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             flash('Logged in successfully!', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+            from urllib.parse import urlparse
+
+next_page = request.args.get("next")
+
+if next_page:
+    parsed = urlparse(next_page)
+
+    if parsed.netloc == "":
+        return redirect(next_page)
+
+        return redirect(url_for("dashboard"))
+             if next_page else redirect(url_for('dashboard'))
         flash('Invalid username or password.', 'danger')
-    return render_template('login.html', form=form)
+        return render_template('login.html', form=form)
 
 @app.route('/dashboard')
 @login_required
@@ -197,9 +207,21 @@ def like_user(user_id):
     db.session.add(like)
     mutual_like = Like.query.filter_by(user_id=user_id, liked_user_id=current_user.id).first()
     if mutual_like:
-        match = Match(user1_id=min(current_user.id, user_id),
-                      user2_id=max(current_user.id, user_id),
-                      is_mutual=True)
+        match = Match.query.filter(
+    (
+        (Match.user1_id == min(current_user.id, user_id)) &
+        (Match.user2_id == max(current_user.id, user_id))
+    )
+).first()
+
+if not existing_match:
+    db.session.add(
+        Match(
+            user1_id=min(current_user.id, user_id),
+            user2_id=max(current_user.id, user_id),
+            is_mutual=True
+        )
+    )
         db.session.add(match)
     db.session.commit()
     return jsonify({'success': True, 'mutual': bool(mutual_like)})
@@ -405,11 +427,24 @@ def handle_csrf_error(e):
     flash('Security token expired. Please try again.', 'danger')
     return redirect(request.referrer or url_for('index'))
 
-with app.app_context():
-    db.create_all()
+if os.getenv("AUTO_CREATE_DB", "true").lower() == "true":
+    with app.app_context():
+        db.create_all()
+  
 
 if __name__ == '__main__':
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '5000'))
     debug = os.getenv('FLASK_DEBUG', '0').lower() in ('1', 'true', 'yes', 'on')
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, debug=debug) 
+    
+    @app.after_request
+    def security_headers(response):
+
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+        esponse.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        return response
