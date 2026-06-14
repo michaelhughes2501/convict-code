@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: convict-code-dev
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/convict_code
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AUTO_CREATE_DB=true
+    volumes:
+      - ./app.py:/app/app.py
+      - ./database.py:/app/database.py
+      - ./templates:/app/templates
+      - ./static:/app/static
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/resources"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - convict-code
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: convict-code-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: convict_code
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - convict-code
+
+networks:
+  convict-code:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -7,24 +7,13 @@ from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
-from database import db, User, Message, ForumPost, ForumComment, Like, Match
+from database import db, User, Message, ForumPost, ForumComment, Like, Match, Job, Housing
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-database_url = os.getenv("DATABASE_URL")
-
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace(
-        "postgres://",
-        "postgresql://",
-        1
-    )
-
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    database_url or "sqlite:///felon_dating.db"
-)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///felon_dating.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -34,6 +23,21 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
+
+# AI-powered dashboard API (Anthropic-backed analytics/admin endpoints)
+from app_dashboard import dashboard_bp
+app.register_blueprint(dashboard_bp)
+csrf.exempt(dashboard_bp)
+
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('Admin access required.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -82,6 +86,22 @@ class ForumPostForm(FlaskForm):
 
 class MessageForm(FlaskForm):
     message = TextAreaField('Message', validators=[DataRequired(), Length(max=1000)])
+
+class JobForm(FlaskForm):
+    title = StringField('Job Title', validators=[DataRequired(), Length(max=200)])
+    employer = StringField('Employer', validators=[DataRequired(), Length(max=200)])
+    location = StringField('Location', validators=[Length(max=100)])
+    description = TextAreaField('Description')
+    url = StringField('Application URL', validators=[Length(max=500)])
+    is_fair_chance = SelectField('Fair Chance Employer?', choices=[('1', 'Yes'), ('0', 'No')])
+
+class HousingForm(FlaskForm):
+    title = StringField('Listing Title', validators=[DataRequired(), Length(max=200)])
+    provider = StringField('Provider / Landlord', validators=[DataRequired(), Length(max=200)])
+    location = StringField('Location', validators=[Length(max=100)])
+    description = TextAreaField('Description')
+    url = StringField('Website / Contact URL', validators=[Length(max=500)])
+    accepts_records = SelectField('Accepts Criminal Records?', choices=[('1', 'Yes'), ('0', 'No')])
 
 # Static resource directory
 RESOURCES = [
@@ -142,20 +162,10 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             flash('Logged in successfully!', 'success')
-            from urllib.parse import urlparse
-
-next_page = request.args.get("next")
-
-if next_page:
-    parsed = urlparse(next_page)
-
-    if parsed.netloc == "":
-        return redirect(next_page)
-
-        return redirect(url_for("dashboard"))
-             if next_page else redirect(url_for('dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         flash('Invalid username or password.', 'danger')
-        return render_template('login.html', form=form)
+    return render_template('login.html', form=form)
 
 @app.route('/dashboard')
 @login_required
@@ -207,21 +217,9 @@ def like_user(user_id):
     db.session.add(like)
     mutual_like = Like.query.filter_by(user_id=user_id, liked_user_id=current_user.id).first()
     if mutual_like:
-        match = Match.query.filter(
-    (
-        (Match.user1_id == min(current_user.id, user_id)) &
-        (Match.user2_id == max(current_user.id, user_id))
-    )
-).first()
-
-if not existing_match:
-    db.session.add(
-        Match(
-            user1_id=min(current_user.id, user_id),
-            user2_id=max(current_user.id, user_id),
-            is_mutual=True
-        )
-    )
+        match = Match(user1_id=min(current_user.id, user_id),
+                      user2_id=max(current_user.id, user_id),
+                      is_mutual=True)
         db.session.add(match)
     db.session.commit()
     return jsonify({'success': True, 'mutual': bool(mutual_like)})
@@ -293,7 +291,7 @@ def new_post():
 @app.route('/forum/post/<int:post_id>')
 def view_post(post_id):
     post = ForumPost.query.get_or_404(post_id)
-    post.views = (post.views or 0) + 1
+    post.views += 1
     db.session.commit()
     comments = ForumComment.query.filter_by(post_id=post_id).order_by(ForumComment.created_at).all()
     return render_template('view_post.html', post=post, comments=comments)
@@ -422,29 +420,183 @@ def resources_api():
         results = [r for r in results if r['category'].lower() == category]
     return jsonify(results)
 
+# --- Jobs ---
+
+@app.route('/jobs')
+def jobs():
+    listings = Job.query.filter_by(is_approved=True).order_by(Job.created_at.desc()).all()
+    return render_template('jobs.html', jobs=listings)
+
+@app.route('/jobs/new', methods=['GET', 'POST'])
+@login_required
+def new_job():
+    form = JobForm()
+    if form.validate_on_submit():
+        job = Job(
+            title=form.title.data,
+            employer=form.employer.data,
+            location=form.location.data,
+            description=form.description.data,
+            url=form.url.data,
+            is_fair_chance=form.is_fair_chance.data == '1',
+            posted_by=current_user.id,
+        )
+        db.session.add(job)
+        db.session.commit()
+        flash('Job listing submitted for review.', 'success')
+        return redirect(url_for('jobs'))
+    return render_template('new_job.html', form=form)
+
+@app.route('/jobs/<int:job_id>')
+def view_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    return render_template('view_job.html', job=job)
+
+# --- Housing ---
+
+@app.route('/housing')
+def housing():
+    listings = Housing.query.filter_by(is_approved=True).order_by(Housing.created_at.desc()).all()
+    return render_template('housing.html', listings=listings)
+
+@app.route('/housing/new', methods=['GET', 'POST'])
+@login_required
+def new_housing():
+    form = HousingForm()
+    if form.validate_on_submit():
+        listing = Housing(
+            title=form.title.data,
+            provider=form.provider.data,
+            location=form.location.data,
+            description=form.description.data,
+            url=form.url.data,
+            accepts_records=form.accepts_records.data == '1',
+            posted_by=current_user.id,
+        )
+        db.session.add(listing)
+        db.session.commit()
+        flash('Housing listing submitted for review.', 'success')
+        return redirect(url_for('housing'))
+    return render_template('new_housing.html', form=form)
+
+# --- Admin ---
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    stats = {
+        'total_users': User.query.count(),
+        'new_users_week': User.query.filter(User.created_at >= week_ago).count(),
+        'pending_jobs': Job.query.filter_by(is_approved=False).count(),
+        'pending_housing': Housing.query.filter_by(is_approved=False).count(),
+        'total_posts': ForumPost.query.count(),
+        'total_messages': Message.query.count(),
+    }
+    return render_template('admin/dashboard.html', stats=stats)
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', users=users)
+
+@app.route('/admin/users/<int:user_id>/ban', methods=['POST'])
+@login_required
+@admin_required
+def admin_ban_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_active = False
+    db.session.commit()
+    flash(f'User {user.username} banned.', 'warning')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/<int:user_id>/unban', methods=['POST'])
+@login_required
+@admin_required
+def admin_unban_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_active = True
+    db.session.commit()
+    flash(f'User {user.username} unbanned.', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/jobs')
+@login_required
+@admin_required
+def admin_jobs():
+    pending = Job.query.filter_by(is_approved=False).order_by(Job.created_at.desc()).all()
+    return render_template('admin/jobs.html', jobs=pending)
+
+@app.route('/admin/jobs/<int:job_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    job.is_approved = True
+    db.session.commit()
+    flash('Job approved.', 'success')
+    return redirect(url_for('admin_jobs'))
+
+@app.route('/admin/jobs/<int:job_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def admin_reject_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job rejected and removed.', 'warning')
+    return redirect(url_for('admin_jobs'))
+
+@app.route('/admin/housing')
+@login_required
+@admin_required
+def admin_housing():
+    pending = Housing.query.filter_by(is_approved=False).order_by(Housing.created_at.desc()).all()
+    return render_template('admin/housing.html', listings=pending)
+
+@app.route('/admin/housing/<int:listing_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve_housing(listing_id):
+    listing = Housing.query.get_or_404(listing_id)
+    listing.is_approved = True
+    db.session.commit()
+    flash('Housing listing approved.', 'success')
+    return redirect(url_for('admin_housing'))
+
+@app.route('/admin/posts')
+@login_required
+@admin_required
+def admin_posts():
+    posts = ForumPost.query.order_by(ForumPost.created_at.desc()).limit(100).all()
+    return render_template('admin/posts.html', posts=posts)
+
+@app.route('/admin/posts/<int:post_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_post(post_id):
+    post = ForumPost.query.get_or_404(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post removed.', 'warning')
+    return redirect(url_for('admin_posts'))
+
+# --- Error handlers ---
+
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     flash('Security token expired. Please try again.', 'danger')
     return redirect(request.referrer or url_for('index'))
 
-if os.getenv("AUTO_CREATE_DB", "true").lower() == "true":
-    with app.app_context():
-        db.create_all()
-  
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '5000'))
     debug = os.getenv('FLASK_DEBUG', '0').lower() in ('1', 'true', 'yes', 'on')
-    app.run(host=host, port=port, debug=debug) 
-    
-    @app.after_request
-    def security_headers(response):
-
-        response.headers["X-Content-Type-Options"] = "nosniff"
-
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
-
-        esponse.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        return response
+    app.run(host=host, port=port, debug=debug)

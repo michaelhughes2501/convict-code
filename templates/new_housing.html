@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Post Housing — SecondChance Connect{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="h3 mb-4"><i class="fas fa-house me-2 text-primary"></i>Post a Housing Listing</h1>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.title.label(class="form-label fw-semibold") }}
+            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+            {% for e in form.title.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            {{ form.provider.label(class="form-label fw-semibold") }}
+            {{ form.provider(class="form-control" + (" is-invalid" if form.provider.errors else "")) }}
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              {{ form.location.label(class="form-label fw-semibold") }}
+              {{ form.location(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.accepts_records.label(class="form-label fw-semibold") }}
+              {{ form.accepts_records(class="form-select") }}
+            </div>
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class="form-label fw-semibold") }}
+            {{ form.description(class="form-control", rows=4) }}
+          </div>
+          <div class="mb-4">
+            {{ form.url.label(class="form-label fw-semibold") }}
+            {{ form.url(class="form-control", placeholder="https://...") }}
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Submit for Review</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

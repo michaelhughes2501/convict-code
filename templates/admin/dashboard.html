@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — SecondChance Connect{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="fas fa-shield-halved me-2 text-primary"></i>Admin Dashboard</h1>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h2 class="fw-bold text-primary">{{ stats.total_users }}</h2>
+        <p class="text-muted mb-0">Total Users</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h2 class="fw-bold text-success">{{ stats.new_users_week }}</h2>
+        <p class="text-muted mb-0">New This Week</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h2 class="fw-bold text-warning">{{ stats.pending_jobs }}</h2>
+        <p class="text-muted mb-0">Pending Jobs</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h2 class="fw-bold text-info">{{ stats.total_posts }}</h2>
+        <p class="text-muted mb-0">Forum Posts</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary w-100 py-3">
+      <i class="fas fa-users fa-lg d-block mb-1"></i> Manage Users
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('admin_jobs') }}" class="btn btn-outline-warning w-100 py-3">
+      <i class="fas fa-briefcase fa-lg d-block mb-1"></i> Review Jobs
+      {% if stats.pending_jobs > 0 %}
+      <span class="badge bg-warning text-dark ms-1">{{ stats.pending_jobs }}</span>
+      {% endif %}
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('admin_housing') }}" class="btn btn-outline-info w-100 py-3">
+      <i class="fas fa-house fa-lg d-block mb-1"></i> Review Housing
+      {% if stats.pending_housing > 0 %}
+      <span class="badge bg-info ms-1">{{ stats.pending_housing }}</span>
+      {% endif %}
+    </a>
+  </div>
+  <div class="col-md-3">
+    <a href="{{ url_for('admin_posts') }}" class="btn btn-outline-danger w-100 py-3">
+      <i class="fas fa-comments fa-lg d-block mb-1"></i> Moderate Posts
+    </a>
+  </div>
+</div>
+{% endblock %}

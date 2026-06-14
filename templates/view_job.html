@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — SecondChance Connect{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <a href="{{ url_for('jobs') }}" class="btn btn-outline-secondary btn-sm mb-4">
+      <i class="fas fa-arrow-left me-1"></i> Back to Jobs
+    </a>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h1 class="h3 mb-1">{{ job.title }}</h1>
+            <p class="text-muted mb-0"><i class="fas fa-building me-1"></i>{{ job.employer }}</p>
+          </div>
+          {% if job.is_fair_chance %}
+          <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i>Fair Chance</span>
+          {% endif %}
+        </div>
+        {% if job.location %}
+        <p><i class="fas fa-map-marker-alt me-2 text-muted"></i>{{ job.location }}</p>
+        {% endif %}
+        {% if job.description %}
+        <hr>
+        <h5>About This Role</h5>
+        <p>{{ job.description }}</p>
+        {% endif %}
+        {% if job.url %}
+        <div class="mt-4">
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+            Apply Now <i class="fas fa-external-link-alt ms-2"></i>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
